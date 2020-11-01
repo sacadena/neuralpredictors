@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 from collections import namedtuple
-
+from skimage.transform import rescale
 
 class Invertible:
     def inv(self, y):
@@ -406,3 +406,22 @@ class SelectInputChannel(StaticTransform):
             else img[(self.grab_channel,)]
         )
         return x.__class__(**key_vals)
+
+
+class ScaleInputs(StaticTransform):
+    """
+    Given a StaticImage object that includes "images", it rescale the image size by a certain scale factor.
+    """
+    def __init__(self, scale):
+        self.scale = scale
+
+    def __call__(self, x):
+        rescale_input = lambda inp: rescale(inp, [1, self.scale, self.scale], \
+                                            mode='reflect', multichannel=False, \
+                                            anti_aliasing=False, preserve_range=True) 
+
+        return x.__class__(
+            **{k: rescale_input(getattr(x, k)) if k == 'images' else getattr(x, k) for k in x._fields})
+
+    def __repr__(self):
+        return self.__class__.__name__ + '({})'.format(self.scale)
